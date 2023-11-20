@@ -55,7 +55,7 @@ public class Bot extends TelegramLongPollingBot {
             sendText(userId, question);
         } else if (users.get(userId).getQuestionNumber() > questions.size() - 1) {
             sendText(userId,
-                    "Спасибо за участие. Тест завершён." +
+                    "Спасибо за участие. Тест завершён." + "\n" +
                           "Правильные ответы: " + users.get(userId).getScore() + " из " + questions.size() +
                           ".\n" + "Чтобы пройти тест заново используйте команду /start.");
         } else {
