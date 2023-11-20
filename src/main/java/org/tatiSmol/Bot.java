@@ -1,18 +1,26 @@
 package org.tatiSmol;
 
+import org.tatiSmol.question.*;
 import org.telegram.telegrambots.bots.TelegramLongPollingBot;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Bot extends TelegramLongPollingBot {
     private HashMap<Long, UserData> users;
+    private ArrayList<AbstractQuestion> questions;
 
     public Bot() {
         users = new HashMap<>();
+        questions = new ArrayList<>();
+        questions.add(new GitQuestion());
+        questions.add(new JavaQuestion());
+        questions.add(new SQLQuestion());
+        questions.add(new HTTPQuestion());
     }
 
     @Override
@@ -43,15 +51,17 @@ public class Bot extends TelegramLongPollingBot {
         if (text.equals("/start")) {
             sendText(userId, "Привет! Это тест на знание языка Java. Итак, начнём :)");
             users.put(userId, new UserData());
-            String question = getQuestion(1);
+            String question = questions.get(0).getQuestion();
             sendText(userId, question);
-        } else if (users.get(userId).getQuestionNumber() > 4) {
-            sendText(userId, "Правильные ответы: " + users.get(userId).getScore() + " из 4.");
-            sendText(userId, "Чтобы пройти тест заново используйте команду /start");
+        } else if (users.get(userId).getQuestionNumber() > questions.size() - 1) {
+            sendText(userId,
+                    "Спасибо за участие. Тест завершён." +
+                          "Правильные ответы: " + users.get(userId).getScore() + " из " + questions.size() +
+                          ".\n" + "Чтобы пройти тест заново используйте команду /start.");
         } else {
             UserData userData = users.get(userId);
             int qNumb = userData.getQuestionNumber();
-            boolean trueResult = checkAnswer(qNumb, text);
+            boolean trueResult = questions.get(qNumb).checkAnswer(text);
 
             int score = userData.getScore();
             if (trueResult) {
@@ -61,32 +71,16 @@ public class Bot extends TelegramLongPollingBot {
                 sendText(userId, "Неправильный ответ :(");
             }
 
-            userData.setQuestionNumber(qNumb + 1);
+            int nextQ = qNumb + 1;
+            userData.setQuestionNumber(nextQ);
 
-            String question = getQuestion(userData.getQuestionNumber());
-            sendText(userId, question);
+            if (nextQ == questions.size()) {
+                sendText(userId,
+                        "Правильные ответы: " + users.get(userId).getScore() + " из " + questions.size() + ".");
+            } else {
+                String question = questions.get(userData.getQuestionNumber()).getQuestion();
+                sendText(userId, question);
+            }
         }
-    }
-
-    public String getQuestion(int number) {
-        return switch (number) {
-            case 1 -> "Вопрос 1. Сколько в языке программирования Java есть примитивов?";
-            case 2 -> "Вопрос 2. Сколько в реляционных (SQL) базах данных существует типов связей между таблицами?";
-            case 3 -> "Вопрос 3. С помощью какой команды в системе контроля версий Git " +
-                                "можно просмотреть авторов различных срок в одном файле?";
-            case 4 -> "Вопрос 4. Какие методы HTTP-запросов вы знаете?";
-            default -> "";
-        };
-    }
-
-    public boolean checkAnswer(int number, String answer) {
-        answer = answer.toLowerCase();
-        return switch (number) {
-            case 1 -> answer.equals("8");
-            case 2 -> answer.equals("3");
-            case 3 -> answer.contains("blame");
-            default -> answer.contains("get") && answer.contains("post") &&
-                       answer.contains("put") && answer.contains("patch") && answer.contains("delete");
-        };
     }
 }
