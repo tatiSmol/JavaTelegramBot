@@ -9,7 +9,7 @@ import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import java.util.HashMap;
 
 public class Bot extends TelegramLongPollingBot {
-    private HashMap<Long, Integer> users;
+    private HashMap<Long, UserData> users;
 
     public Bot() {
         users = new HashMap<>();
@@ -41,19 +41,29 @@ public class Bot extends TelegramLongPollingBot {
         long userId = message.getFrom().getId();
 
         if (text.equals("/start")) {
-            sendText(userId, "Hello! This is a Java skills test. So, let's begin :)");
-            users.put(userId, 1);
+            sendText(userId, "Привет! Это тест на знание языка Java. Итак, начнём :)");
+            users.put(userId, new UserData());
             String question = getQuestion(1);
             sendText(userId, question);
-        } else if (users.get(userId) > 4) {
-            sendText(userId, "You have answered all the questions.");
+        } else if (users.get(userId).getQuestionNumber() > 4) {
+            sendText(userId, "Правильные ответы: " + users.get(userId).getScore() + " из 4.");
+            sendText(userId, "Чтобы пройти тест заново используйте команду /start");
         } else {
-            boolean trueResult = checkAnswer(users.get(userId), text);
-            sendText(userId, trueResult ? "Всё верно!" : "Ответ неверный :(");
-            int qNumb = users.get(userId);
-            qNumb++;
-            users.put(userId, qNumb);
-            String question = getQuestion(qNumb);
+            UserData userData = users.get(userId);
+            int qNumb = userData.getQuestionNumber();
+            boolean trueResult = checkAnswer(qNumb, text);
+
+            int score = userData.getScore();
+            if (trueResult) {
+                sendText(userId, "Верно! :)");
+                userData.setScore(score + 1);
+            } else {
+                sendText(userId, "Неправильный ответ :(");
+            }
+
+            userData.setQuestionNumber(qNumb + 1);
+
+            String question = getQuestion(userData.getQuestionNumber());
             sendText(userId, question);
         }
     }
