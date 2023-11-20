@@ -6,8 +6,14 @@ import org.telegram.telegrambots.meta.api.objects.Message;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 
+import java.util.HashMap;
+
 public class Bot extends TelegramLongPollingBot {
-    public int qNumb;
+    private HashMap<Long, Integer> users;
+
+    public Bot() {
+        users = new HashMap<>();
+    }
 
     @Override
     public String getBotUsername() {
@@ -36,21 +42,20 @@ public class Bot extends TelegramLongPollingBot {
 
         if (text.equals("/start")) {
             sendText(userId, "Hello! This is a Java skills test. So, let's begin :)");
-            qNumb = 1;
-            String question = getQuestion(qNumb);
+            users.put(userId, 1);
+            String question = getQuestion(1);
             sendText(userId, question);
-        } else if (qNumb > 4) {
+        } else if (users.get(userId) > 4) {
             sendText(userId, "You have answered all the questions.");
         } else {
-            boolean trueResult = checkAnswer(qNumb, text);
+            boolean trueResult = checkAnswer(users.get(userId), text);
             sendText(userId, trueResult ? "Всё верно!" : "Ответ неверный :(");
+            int qNumb = users.get(userId);
             qNumb++;
+            users.put(userId, qNumb);
             String question = getQuestion(qNumb);
             sendText(userId, question);
         }
-
-
-
     }
 
     public String getQuestion(int number) {
